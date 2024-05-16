@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useReducer } from 'react';
 import TodoItem from './ToDoItem';
 import './Todolist.css'
 
@@ -11,72 +11,105 @@ interface Todo {
     editing?: boolean;
 }
 
+// Define the actions that can be dispatched to the reducer
+type Action =
+    | { type: 'ADD_TODO'; payload: string }
+    | { type: 'TOGGLE_COMPLETE'; payload: number }
+    | { type: 'DELETE_TODO'; payload: number }
+    | { type: 'EDIT_TODO'; payload: number }
+    | { type: 'SAVE_TODO'; payload: { id: number; newTitle: string } };
+
+// Define the initial state for the reducer
+const initialState: Todo[] = [];
+
+// Define the reducer function to handle state updates based on actions
+const reducer = (state: Todo[], action: Action): Todo[] => {
+    switch (action.type) {
+        // Add a new todo
+        case 'ADD_TODO':
+            return [
+                {
+                    id: Date.now(),
+                    title: action.payload,
+                    completed: false,
+                },
+                ...state,
+            ];
+
+        // Toggle the completion status of a todo
+        case 'TOGGLE_COMPLETE':
+            return state.map((todo) =>
+                todo.id === action.payload
+                    ? { ...todo, completed: !todo.completed }
+                    : todo
+            );
+
+        // Delete a todo
+        case 'DELETE_TODO':
+            return state.filter((todo) => todo.id !== action.payload);
+
+        // Enable editing mode for a todo
+        case 'EDIT_TODO':
+            return state.map((todo) =>
+                todo.id === action.payload ? { ...todo, editing: true } : todo
+            );
+
+        // Save changes to a todo after editing
+        case 'SAVE_TODO':
+            return state.map((todo) =>
+                todo.id === action.payload.id
+                    ? {
+                        ...todo,
+                        title: action.payload.newTitle,
+                        editing: false,
+                    }
+                    : todo
+            );
+
+        default:
+            return state;
+    }
+};
+
 const TodoList: React.FC = () => {
-    // Initialize state for the list of todos and the new todo title
-    // useState is a hook that allows us to manage state in a functional component
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [newTodoTitle, setNewTodoTitle] = useState<string>('');
+    // Initialize state using the useReducer hook with the reducer function and initial state
+    const [todos, dispatch] = useReducer(reducer, initialState);
+    const [newTodoTitle, setNewTodoTitle] = React.useState('');
 
     // Event handler for input change in the new todo input field
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        // Update the new todo title state with the input value
         setNewTodoTitle(event.target.value);
     };
 
-    // Function to add a new todo to the list
+    // Function to add a new todo by dispatching an 'ADD_TODO' action
     const addTodo = () => {
-        // Check if the new todo title is not empty
         if (newTodoTitle.trim() !== '') {
-            // Create a new todo object
-            const newTodo: Todo = {
-                id: Date.now(), // Generate a unique ID using the current timestamp
-                title: newTodoTitle,
-                completed: false,
-            };
-            // Add the new todo to the beginning of the todos array
-            setTodos([newTodo, ...todos]);
-            // Clear the new todo title input field
+            dispatch({ type: 'ADD_TODO', payload: newTodoTitle });
             setNewTodoTitle('');
         }
     };
 
-    // Function to toggle the completion status of a todo
+    // Function to toggle the completion status of a todo by dispatching a 'TOGGLE_COMPLETE' action
     const toggleComplete = (id: number) => {
-        // Update the todos array by mapping over each todo
-        setTodos(
-            todos.map((todo) =>
-                // If the todo ID matches the provided ID, toggle its completed status
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo
-            )
-        );
+        dispatch({ type: 'TOGGLE_COMPLETE', payload: id });
     };
 
-    // Function to delete a todo from the list
+    // Function to delete a todo by dispatching a 'DELETE_TODO' action
     const deleteTodo = (id: number) => {
-        // Update the todos array by filtering out the todo with the matching ID
-        setTodos(todos.filter((todo) => todo.id !== id));
+        dispatch({ type: 'DELETE_TODO', payload: id });
     };
 
-    // Function to enable editing mode for a todo
+    // Function to enable editing mode for a todo by dispatching an 'EDIT_TODO' action
     const editTodo = (id: number) => {
-        // Update the todos array by mapping over each todo
-        setTodos(
-            todos.map((todo) =>
-                // If the todo ID matches the provided ID, set its editing property to true
-                todo.id === id ? { ...todo, editing: true } : todo
-            )
-        );
+        dispatch({ type: 'EDIT_TODO', payload: id });
     };
 
-    // Function to save changes to a todo after editing
+    // Function to save changes to a todo after editing by dispatching a 'SAVE_TODO' action
     const saveTodo = (id: number, newTitle: string) => {
-        // Update the todos array by mapping over each todo
-        setTodos(
-            todos.map((todo) =>
-                // If the todo ID matches the provided ID, update its title and disable editing mode
-                todo.id === id ? { ...todo, title: newTitle, editing: false } : todo
-            )
-        );
+        dispatch({
+            type: 'SAVE_TODO',
+            payload: { id, newTitle },
+        });
     };
 
     // JSX to render the todo list component
@@ -112,3 +145,4 @@ const TodoList: React.FC = () => {
 };
 
 export default TodoList;
+

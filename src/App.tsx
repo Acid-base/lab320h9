@@ -8,11 +8,12 @@ import './App.css'; // Import the CSS file for styling the App component.
 function App() {
   return (
     <div className="app-container"> {/* A container for centering the content. */}
-      <ToDoList /> 
+      <ToDoList />
     </div>
   );
 }
 
 // Export the App component as the default export.
 export default App;
+
 
